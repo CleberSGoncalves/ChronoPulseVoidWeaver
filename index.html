@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>ChronoPulse: The Void Weaver • CrazyGames</title>
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./src/style.css">
+  <!-- CrazyGames SDK v3 Oficial -->
+  <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+</head>
+<body>
+  <div id="game-container">
+    <!-- Canvas 100% Fullscreen Edge-to-Edge -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- HUD Flutuante Sobreposto Desacoplado (Inicia oculto com .hidden) -->
+    <div id="in-game-hud" class="hidden">
+      <!-- Topo: Nível, 3-Star Goal Progress, Cristais, Pontuação e Botões -->
+      <div class="hud-top">
+        <div class="hud-group-left">
+          <div class="hud-badge level-badge">
+            <span class="label" id="label-hud-sector">SETOR</span>
+            <span id="hud-level-val" class="val">01</span>
+          </div>
+
+          <div id="badge-shield" class="hud-badge shield-badge">
+            <span class="label" id="label-hud-shield">ESCUDO</span>
+            <span id="hud-shield-val" class="val">1/1</span>
+          </div>
+        </div>
+
+        <!-- Barra de Metas 1★ / 2★ / 3★ -->
+        <div class="progress-wrap">
+          <div class="progress-bar-bg">
+            <div id="hud-progress-fill" class="progress-bar-fill" style="width: 0%;"></div>
+            <!-- Pinos de Marco de Estrelas -->
+            <div id="star-pin-1" class="star-pin" style="left: 35%;" title="1★ Meta Básica">★</div>
+            <div id="star-pin-2" class="star-pin" style="left: 70%;" title="2★ Par-Time & Cristais">★</div>
+            <div id="star-pin-3" class="star-pin" style="left: 98%;" title="3★ Vitória Máxima">★</div>
+          </div>
+          <span id="hud-progress-text" class="progress-text">0%</span>
+          <!-- Botão instantâneo de conclusão ao atingir 1 estrela -->
+          <button id="btn-conclude-star" class="btn-pass-star hidden">✅ CONCLUIR FASE (★) ➔</button>
+        </div>
+
+        <div class="hud-group-right">
+          <div class="hud-badge crystals-badge">
+            <span class="label" id="label-hud-crystals">CRISTAIS</span>
+            <span id="hud-crystals-val" class="val">0</span>
+          </div>
+
+          <div class="hud-badge score-badge">
+            <span class="label" id="label-hud-score">PONTOS</span>
+            <span id="hud-score-val" class="val">0</span>
+          </div>
+
+          <button id="btn-sound-toggle" class="btn-icon" title="Mutar/Desmutar Som">🔊</button>
+          <button id="btn-pause-toggle" class="btn-icon" title="Pausar Partida">⏸</button>
+        </div>
+      </div>
+
+      <!-- Rodapé Flutuante: Controles, Atalhos e Link Oficial -->
+      <div class="hud-bottom">
+        <div class="touch-hint">
+          <span id="text-touch-hint">⚡ SEGURE PARA SUBIR EM 45° • SOLTE PARA DESCER EM 45°</span>
+        </div>
+
+        <div class="official-footer">
+          <a href="https://kinomuse.com.br" target="_blank" rel="noopener noreferrer">
+            kinomuse.com.br
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modais Flutuantes Sobrepostos Desacoplados -->
+    
+    <!-- 1. Modal Início / Apresentação da Lore Interativa (1 Clique para Jogar) -->
+    <div id="modal-start" class="game-modal hidden">
+      <div class="modal-card wide">
+        <div class="modal-glow"></div>
+        <div class="modal-header-top">
+          <button id="btn-lang-toggle" class="btn-sec mini-lang">PT-BR</button>
+        </div>
+        <h1 class="modal-title" id="start-title">ChronoPulse: The Void Weaver</h1>
+        <p class="modal-subtitle" id="start-subtitle">Sinfonia Temporal na Fenda de Aethel</p>
+        
+        <p class="modal-lore" id="start-lore">
+          No tecido esgarçado da Fenda de Aethel, um tecelão de partículas temporais canaliza pulsos harmônicos para restaurar tapeçarias quânticas. Desvie de agulhas de antimatéria, cruze portais de pulso temporal e restaure o equilíbrio cósmico.
+        </p>
+
+        <div class="modal-guide">
+          <div class="guide-item">
+            <span class="icon">🚀</span>
+            <span id="guide-ascend">Segure (Espaço / Toque / Clique) para ascender a 45°</span>
+          </div>
+          <div class="guide-item">
+            <span class="icon">⬇️</span>
+            <span id="guide-descend">Solte para mergulhar a 45° com gravidade quântica</span>
+          </div>
+          <div class="guide-item">
+            <span class="icon">⚠️</span>
+            <span id="guide-dodge">Desvie de serras de antimatéria, lasers e barreiras</span>
+          </div>
+          <div class="guide-item">
+            <span class="icon">💎</span>
+            <span id="guide-collect">Colete Cristais Quânticos para liberar naves e melhorias</span>
+          </div>
+        </div>
+
+        <!-- Botão Primário: Entra na gameplay com NO MÁXIMO 1 clique -->
+        <button id="btn-start-game" class="btn-play pulse-glow">JOGAR AGORA ➔</button>
+
+        <!-- Acesso rápido ao Meta-Game -->
+        <div class="start-sub-actions">
+          <button id="btn-open-daily" class="btn-sec icon-btn">📅 Diário</button>
+          <button id="btn-open-quests" class="btn-sec icon-btn">📜 Missões</button>
+          <button id="btn-open-shop" class="btn-sec icon-btn">🛒 Loja</button>
+          <button id="btn-open-spin" class="btn-sec icon-btn">🎡 Roleta</button>
+          <button id="btn-open-levels" class="btn-sec icon-btn">🗺️ Setores</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Modal Pausa -->
+    <div id="modal-pause" class="game-modal hidden">
+      <div class="modal-card mini">
+        <h2 class="modal-title" id="pause-title">PAUSA TEMPORAL</h2>
+        <div class="modal-actions">
+          <button id="btn-resume-game" class="btn-play">CONTINUAR</button>
+          <button id="btn-restart-from-pause" class="btn-sec">REINICIAR FASE</button>
+          <button id="btn-pause-to-levels" class="btn-sec">MAPA DE SETORES</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Modal Vitória de Nível / Setor -->
+    <div id="modal-victory" class="game-modal hidden">
+      <div class="modal-card victory">
+        <div id="vic-stars-display" class="victory-stars">★★★</div>
+        <h2 class="modal-title" id="vic-title">TAPEÇARIA RESTAURADA!</h2>
+        <p class="modal-subtitle" id="vic-sub">Setor tecido com harmonia perfeita</p>
+
+        <div class="victory-stats">
+          <div class="stat-box">
+            <span class="label">Pontuação</span>
+            <span id="vic-score-val" class="val">0</span>
+          </div>
+          <div class="stat-box">
+            <span class="label">Cristais</span>
+            <span id="vic-crystals-val" class="val">0 💎</span>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="btn-double-victory-rewards" class="btn-play gold">🎬 DOBRAR RECOMPENSAS (2x)</button>
+          <button id="btn-next-level" class="btn-play">PRÓXIMO SETOR ➔</button>
+          <button id="btn-replay-level" class="btn-sec">REPETIR SETOR</button>
+          <button id="btn-victory-to-levels" class="btn-sec">MAPA DE SETORES</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Modal Derrota / Ruptura Temporal -->
+    <div id="modal-defeat" class="game-modal hidden">
+      <div class="modal-card defeat">
+        <div class="defeat-icon">💥</div>
+        <h2 class="modal-title" id="defeat-title">RUPTURA TEMPORAL</h2>
+        <p class="modal-subtitle" id="defeat-sub">Sua nave perdeu a coerência quântica</p>
+
+        <div class="modal-actions">
+          <!-- Rewarded Ad Revive (1x por partida) com 3s de invulnerabilidade -->
+          <button id="btn-revive-ad" class="btn-play cyan">🎬 REVIVER NAVE (ESCUDO 3s)</button>
+          <button id="btn-defeat-retry" class="btn-play">TENTAR NOVAMENTE</button>
+          <button id="btn-defeat-to-levels" class="btn-sec">MAPA DE SETORES</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Modal Calendário de Recompensas Diárias (7 Dias) -->
+    <div id="modal-daily" class="game-modal hidden">
+      <div class="modal-card wide">
+        <div class="modal-card-header">
+          <h2 class="modal-title">CALENDÁRIO QUÂNTICO (7 DIAS)</h2>
+          <button class="btn-close-modal" data-close="modal-daily">✕</button>
+        </div>
+        <div id="daily-rewards-container"></div>
+      </div>
+    </div>
+
+    <!-- 6. Modal Missões Diárias & Semanais -->
+    <div id="modal-quests" class="game-modal hidden">
+      <div class="modal-card wide">
+        <div class="modal-card-header">
+          <h2 class="modal-title">MISSÕES DO TECELÃO DO VAZIO</h2>
+          <button class="btn-close-modal" data-close="modal-quests">✕</button>
+        </div>
+        <div id="quests-container"></div>
+      </div>
+    </div>
+
+    <!-- 7. Modal Loja Meta (Skins, Rastros, Upgrades) -->
+    <div id="modal-shop" class="game-modal hidden">
+      <div class="modal-card wide">
+        <div class="modal-card-header">
+          <h2 class="modal-title">LOJA QUÂNTICA DE UPGRADES</h2>
+          <button class="btn-close-modal" data-close="modal-shop">✕</button>
+        </div>
+        <div id="shop-container"></div>
+      </div>
+    </div>
+
+    <!-- 8. Modal Roleta da Sorte (Lucky Spin) -->
+    <div id="modal-spin" class="game-modal hidden">
+      <div class="modal-card mini">
+        <div class="modal-card-header">
+          <h2 class="modal-title">ROLETA DA SORTE TEMPORAL</h2>
+          <button class="btn-close-modal" data-close="modal-spin">✕</button>
+        </div>
+        <div class="spin-wheel-wrap">
+          <canvas id="spin-canvas"></canvas>
+        </div>
+        <div class="modal-actions">
+          <button id="btn-spin-action" class="btn-play gold">GIRAR GRÁTIS</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9. Modal Seletor de Fases (15 Setores) -->
+    <div id="modal-levels" class="game-modal hidden">
+      <div class="modal-card wide">
+        <div class="modal-card-header">
+          <h2 class="modal-title">SELEÇÃO DE SETORES</h2>
+          <button class="btn-close-modal" data-close="modal-levels">✕</button>
+        </div>
+        <div id="levels-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
