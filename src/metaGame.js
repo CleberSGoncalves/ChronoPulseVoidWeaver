@@ -27,9 +27,14 @@ export class MetaGameUI {
     let html = '<div class="daily-grid">';
     rewardsConfig.forEach(r => {
       let stateClass = '';
-      if (r.day < status.day) stateClass = 'claimed';
-      else if (r.day === status.day && status.canClaim) stateClass = 'ready';
-      else stateClass = 'locked';
+      if (status.canClaim) {
+        if (r.day < status.day) stateClass = 'claimed';
+        else if (r.day === status.day) stateClass = 'ready';
+        else stateClass = 'locked';
+      } else {
+        if (r.day <= status.day) stateClass = 'claimed';
+        else stateClass = 'locked';
+      }
 
       html += `
         <div class="daily-card ${stateClass}">
@@ -354,8 +359,9 @@ export class MetaGameUI {
             }
           }
         } else if (type === 'upgrade') {
-          if (SaveManager.spendCrystals(price)) {
-            save.upgrades[id] = (save.upgrades[id] || 1) + 1;
+          const currentLvl = save.upgrades[id] || 1;
+          if (currentLvl < 5 && SaveManager.spendCrystals(price)) {
+            save.upgrades[id] = currentLvl + 1;
             sound.playWin();
           } else {
             sound.playCrash();

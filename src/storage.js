@@ -127,7 +127,8 @@ export class SaveManager {
   }
 
   static spendCrystals(amount) {
-    if (!Number.isFinite(amount) || amount <= 0) return false;
+    if (!Number.isFinite(amount) || amount < 0) return false;
+    if (amount === 0) return true;
     if (this.data.crystals >= amount) {
       this.data.crystals -= Math.floor(amount);
       this.save();
@@ -180,6 +181,9 @@ export class SaveManager {
         this.data.sectors[i].unlocked = true;
       }
     }
+
+    // Sincroniza progresso da missão de estrelas (w1)
+    this.updateQuestProgress('earn_stars', 0);
   }
 
   static updateQuestProgress(type, amount) {
@@ -229,9 +233,9 @@ export class SaveManager {
 
     const lastDate = new Date(lastClaim);
     const todayDate = new Date(todayStr);
-    const diffDays = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.round((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) {
+    if (diffDays <= 0) {
       return { canClaim: false, day: (this.data.dailyLogin.dayStreak % 7) || 7 };
     } else if (diffDays === 1) {
       const nextDay = ((this.data.dailyLogin.dayStreak % 7) + 1);
@@ -261,6 +265,13 @@ export class SaveManager {
     const finalCrystals = currentReward.crystals * multiplier;
     this.addCrystals(finalCrystals);
 
+    if (currentReward.bonus === 'shield_boost') {
+      if ((this.data.upgrades.shield || 1) < 5) {
+        this.data.upgrades.shield = (this.data.upgrades.shield || 1) + 1;
+      } else {
+        this.addCrystals(200); // Converte em cristais se já estiver no nível máximo
+      }
+    }
     if (currentReward.bonus === 'trail_matrix' && !this.data.unlockedTrails.includes('trail_matrix')) {
       this.data.unlockedTrails.push('trail_matrix');
     }

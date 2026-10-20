@@ -96,7 +96,8 @@ export class ParticleSystem {
     for (let i = this.rings.length - 1; i >= 0; i--) {
       const r = this.rings[i];
       r.radius += r.growthRate * dt;
-      r.alpha = Math.max(0, 1 - r.radius / r.maxRadius);
+      const ringRatio = Math.max(0, 1 - r.radius / r.maxRadius);
+      r.alpha = ringRatio * ringRatio; // Fade quadrático
       if (r.radius >= r.maxRadius || r.alpha <= 0.01) {
         this.rings.splice(i, 1);
       }
@@ -107,9 +108,10 @@ export class ParticleSystem {
       const pop = this.popups[i];
       pop.life += dt;
       pop.y += pop.vy * dt;
-      pop.vy *= 0.94; // Amortecimento
+      pop.vy *= Math.pow(0.04, dt); // Amortecimento framerate-independent
       pop.scale = Math.max(1.0, pop.scale - dt * 0.8);
-      pop.alpha = Math.max(0, 1 - pop.life / pop.maxLife);
+      const popRatio = Math.max(0, 1 - pop.life / pop.maxLife);
+      pop.alpha = popRatio * popRatio; // Fade quadrático
       if (pop.life >= pop.maxLife) {
         this.popups.splice(i, 1);
       }

@@ -138,6 +138,7 @@ export class RhythmWaveGame {
     this.isHitStopped = true;
     setTimeout(() => {
       this.isHitStopped = false;
+      this.lastTime = performance.now(); // Evita spike de delta time ao retomar
     }, durationMs);
   }
 
@@ -415,24 +416,31 @@ export class RhythmWaveGame {
   }
 
   update(dt) {
-    // Anti-NaN Guarda
-    if (!Number.isFinite(this.player.x) || !Number.isFinite(this.player.y)) {
+    // Anti-NaN Guarda Completo (Posição, Velocidade e Escala)
+    if (
+      !Number.isFinite(this.player.x) || !Number.isFinite(this.player.y) ||
+      !Number.isFinite(this.player.vx) || !Number.isFinite(this.player.vy) ||
+      !Number.isFinite(this.player.scaleX) || !Number.isFinite(this.player.scaleY)
+    ) {
       this.resetPlayer();
       return;
     }
+
+    const prevX = this.player.x;
+    const prevY = this.player.y;
 
     // Movimentação Contínua em 45°
     this.player.x += this.player.vx * dt;
     if (this.isPressing) {
       this.player.y -= this.player.vy * dt;
-      // Squash & Stretch: alonga ao subir
-      this.player.scaleX = Math.min(1.25, this.player.scaleX + dt * 3);
-      this.player.scaleY = Math.max(0.85, this.player.scaleY - dt * 3);
+      // Squash & Stretch: alonga suavemente ao subir
+      this.player.scaleX = Math.min(1.22, this.player.scaleX + dt * 4);
+      this.player.scaleY = Math.max(0.82, this.player.scaleY - dt * 4);
     } else {
       this.player.y += this.player.vy * dt;
-      // Retorna para escala normal
-      this.player.scaleX = Math.max(0.9, this.player.scaleX - dt * 2);
-      this.player.scaleY = Math.min(1.15, this.player.scaleY + dt * 2);
+      // Retorno harmônico elástico para escala neutra (1.0)
+      this.player.scaleX += (1.0 - this.player.scaleX) * Math.min(1.0, dt * 7);
+      this.player.scaleY += (1.0 - this.player.scaleY) * Math.min(1.0, dt * 7);
     }
 
     // Invulnerabilidade temporária
@@ -516,27 +524,31 @@ export class RhythmWaveGame {
       }
     }
 
-    // Colisão com Obstáculos
+    // Colisão com Obstáculos (com sub-sampling contínuo para evitar tunelamento)
+    const midX = (prevX + this.player.x) / 2;
+    const midY = (prevY + this.player.y) / 2;
+
     for (const obs of this.obstacles) {
       // Pula obstáculos distantes da câmera
       if (obs.x < this.cameraX - 100 || obs.x > this.cameraX + this.w + 100) continue;
 
       if (obs.type === 'saw') {
         obs.rot += dt * 6.5;
-        const dx = this.player.x - obs.x;
-        const dy = this.player.y - obs.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < obs.radius + this.player.size * 0.65) {
+        const d1 = Math.hypot(this.player.x - obs.x, this.player.y - obs.y);
+        const d2 = Math.hypot(midX - obs.x, midY - obs.y);
+        const hitDist = obs.radius + this.player.size * 0.65;
+        if (d1 < hitDist || d2 < hitDist) {
           this.onDie();
           return;
         }
       } else if (obs.type === 'pillar') {
-        if (
-          this.player.x + this.player.size > obs.x - obs.w / 2 &&
-          this.player.x - this.player.size < obs.x + obs.w / 2 &&
-          this.player.y + this.player.size > obs.y - obs.h / 2 &&
-          this.player.y - this.player.size < obs.y + obs.h / 2
-        ) {
+        const checkPillar = (px, py) => (
+          px + this.player.size > obs.x - obs.w / 2 &&
+          px - this.player.size < obs.x + obs.w / 2 &&
+          py + this.player.size > obs.y - obs.h / 2 &&
+          py - this.player.size < obs.y + obs.h / 2
+        );
+        if (checkPillar(this.player.x, this.player.y) || checkPillar(midX, midY)) {
           this.onDie();
           return;
         }
@@ -544,10 +556,11 @@ export class RhythmWaveGame {
         obs.timer = (obs.timer || 0) + dt;
         obs.active = Math.sin(obs.timer * 3) > -0.2; // Pulso do laser
         if (obs.active) {
-          if (
-            Math.abs(this.player.x - obs.x) < 12 &&
-            Math.abs(this.player.y - obs.y) < obs.h / 2
-          ) {
+          const checkLaser = (px, py) => (
+            Math.abs(px - obs.x) < 14 &&
+            Math.abs(py - obs.y) < obs.h / 2
+          );
+          if (checkLaser(this.player.x, this.player.y) || checkLaser(midX, midY)) {
             this.onDie();
             return;
           }
