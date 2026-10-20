@@ -246,8 +246,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
       const btnSpinAction = document.getElementById('btn-spin-action');
       if (btnSpinAction) {
+        btnSpinAction.disabled = luckySpinInstance.isSpinning;
         const canFree = luckySpinInstance.canFreeSpin();
-        btnSpinAction.textContent = canFree ? I18n.t('btnSpinFree') : I18n.t('btnSpinAd');
+        const cdStr = !canFree ? ` (${luckySpinInstance.getRemainingCooldownFormatted()})` : '';
+        btnSpinAction.textContent = canFree ? I18n.t('btnSpinFree') : `${I18n.t('btnSpinAd')}${cdStr}`;
       }
     });
   }
@@ -260,11 +262,14 @@ window.addEventListener('DOMContentLoaded', () => {
       const canFree = luckySpinInstance.canFreeSpin();
 
       const doSpin = () => {
+        btnSpinAction.disabled = true;
         btnSpinAction.textContent = I18n.t('spinning');
         luckySpinInstance.spin((prize) => {
+          btnSpinAction.disabled = false;
           GameHUD.updateCrystals(SaveManager.get().crystals);
           const canNow = luckySpinInstance.canFreeSpin();
-          btnSpinAction.textContent = canNow ? I18n.t('btnSpinFree') : I18n.t('btnSpinAd');
+          const cdStr = !canNow ? ` (${luckySpinInstance.getRemainingCooldownFormatted()})` : '';
+          btnSpinAction.textContent = canNow ? I18n.t('btnSpinFree') : `${I18n.t('btnSpinAd')}${cdStr}`;
         });
       };
 

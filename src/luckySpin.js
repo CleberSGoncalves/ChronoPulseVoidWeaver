@@ -48,6 +48,22 @@ export class LuckySpin {
     return diffHours >= this.cooldownHours;
   }
 
+  getRemainingCooldownMs() {
+    const save = SaveManager.get();
+    const lastSpin = save.lastFreeSpinTime || 0;
+    const elapsed = Date.now() - lastSpin;
+    const totalCooldownMs = this.cooldownHours * 60 * 60 * 1000;
+    return Math.max(0, totalCooldownMs - elapsed);
+  }
+
+  getRemainingCooldownFormatted() {
+    const ms = this.getRemainingCooldownMs();
+    if (ms <= 0) return '0h 0m';
+    const hours = Math.floor(ms / (1000 * 60 * 60));
+    const mins = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours}h ${mins}m`;
+  }
+
   spin(onFinish) {
     if (this.isSpinning) return;
     this.isSpinning = true;
@@ -87,11 +103,9 @@ export class LuckySpin {
 
   getSelectedSlice() {
     const sliceAngle = (Math.PI * 2) / this.slices.length;
-    // O ponteiro aponta para o topo (-Math.PI / 2)
-    const normalizedAngle = (Math.PI * 2 - (this.currentAngle % (Math.PI * 2))) % (Math.PI * 2);
-    // Ajuste para ponteiro no topo
-    const pointerAngle = (normalizedAngle + Math.PI / 2) % (Math.PI * 2);
-    const index = Math.floor(pointerAngle / sliceAngle) % this.slices.length;
+    // O ponteiro aponta para o topo (ângulo 3*PI/2 ou -PI/2 em canvas)
+    const normalizedAngle = (Math.PI * 1.5 - (this.currentAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    const index = Math.floor(normalizedAngle / sliceAngle) % this.slices.length;
     return this.slices[index];
   }
 
